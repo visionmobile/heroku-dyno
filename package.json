@@ -1,0 +1,36 @@
+{
+  "name": "heroku-dyno",
+  "version": "0.1.0",
+  "description": "Unbaffled heroku dyno management",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/visionmobile/heroku-dyno.git"
+  },
+  "main": "src/Dyno.js",
+  "scripts": {
+    "test": "node test/index.js"
+  },
+  "keywords": [
+    "s3",
+    "filesystem",
+    "cloud",
+    "storage",
+    "promises",
+    "simple",
+    "amazon",
+    "aws"
+  ],
+  "author": "Dimitrios C. Michalakos <dimitris@jmike.gr>",
+  "license": "MIT",
+  "dependencies": {
+    "bluebird": "^2.9.24",
+    "heroku-client": "1.9.1",
+    "lodash": "^3.7.0",
+    "type-of": "^2.0.1"
+  },
+  "devDependencies": {
+    "chai": "^2.2.0",
+    "dotenv": "^1.1.0",
+    "mocha": "^2.2.4"
+  }
+}
