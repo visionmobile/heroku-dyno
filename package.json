@@ -1,6 +1,6 @@
 {
   "name": "heroku-dyno",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Unbaffled heroku dyno management",
   "repository": {
     "type": "git",
@@ -11,14 +11,13 @@
     "test": "node test/index.js"
   },
   "keywords": [
-    "s3",
-    "filesystem",
-    "cloud",
-    "storage",
+    "heroku",
+    "dyno",
+    "process",
+    "scale",
     "promises",
     "simple",
-    "amazon",
-    "aws"
+    "bluebird"
   ],
   "author": "Dimitrios C. Michalakos <dimitris@jmike.gr>",
   "license": "MIT",
