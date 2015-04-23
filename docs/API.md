@@ -95,6 +95,8 @@ dyno.on('start', function (info) {
 
 ### <a name="stop-event" href="#stop-event">@</a>stop event
 
+##### Example
+
 Event "stop" is emitted when a dyno process has stopped.
 
 ```javascript
