@@ -81,7 +81,7 @@ dyno.scale(0)
 
 ## Events
 
-### <a name="start-event" href="#start-event">@</a>init event
+### <a name="start-event" href="#start-event">@</a>start event
 
 Event "start" is emitted a new dyno process has started.
 
