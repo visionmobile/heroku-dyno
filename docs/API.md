@@ -3,6 +3,10 @@
 ## Table of Contents
 
 * [Constructor](#constructor)
+* [Properties](#properties)
+  * [runningProcesses](#runningProcesses)
+  * [size](#size)
+  * [command](#command)
 * [Methods](#methods)
   * [scale(quantity)](#scale)
   * [autoSync(ms)](#autoSync)
@@ -41,11 +45,25 @@ var dyno = new Dyno({
 });
 ```
 
+## Properties
+
+### <a name="runningProcesses" href="#runningProcesses">#</a>runningProcesses -> Array.<Object>
+
+Returns an array of running processes.
+
+### <a name="size" href="#size">#</a>size -> String
+
+Returns the size of the dyno, as specified on construction time (e.g. "Standard-1X").
+
+### <a name="command" href="#command">#</a>command -> String
+
+Returns the command executed, as specified on construction time (e.g. "node do-something.js").
+
 ## Methods
 
 ### <a name="scale" href="#scale">#</a>scale(quantity, [callback]) -> Promise
 
-Scales the dyno according to the specified quantity.
+Scales dyno's running processes to the designated quantity.
 
 ##### Parameters
 
@@ -65,7 +83,7 @@ An empty bluebird promise.
 ```javascript
 dyno.scale(2)
   .then(function () {
-    // dyno is running with 2 processes
+    // 2 processes initiated
   })
   .catch(function (err) {
     console.error(err);
@@ -75,7 +93,7 @@ dyno.scale(2)
 ```javascript
 dyno.scale(0)
   .then(function () {
-    // dyno has been stopped
+    // all processes has been terminated
   })
   .catch(function (err) {
     console.error(err);
@@ -112,7 +130,7 @@ dyno.autoSync(-1); // disable auto-sync
 
 ### <a name="start-event" href="#start-event">@</a>start event
 
-Event "start" is emitted a new dyno process has started.
+Event "start" is emitted a new running process has started.
 
 ##### Example
 
@@ -126,7 +144,7 @@ dyno.on('start', function (info) {
 
 ##### Example
 
-Event "stop" is emitted when a dyno process has stopped.
+Event "stop" is emitted when a running process has stopped.
 
 ```javascript
 db.on('stop', function (info) {
