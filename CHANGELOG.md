@@ -1,3 +1,7 @@
+## 0.3.1 - 2015-07-17
+
+* Fix invalid main script reference
+
 ## 0.3.0 - 2015-07-17
 
 * Rewrite in es2015 using Babel
