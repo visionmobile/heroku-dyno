@@ -188,4 +188,4 @@ class Dyno extends EventEmitter {
 
 }
 
-module.exports = Dyno;
+export default Dyno;
