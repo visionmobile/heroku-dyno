@@ -38,7 +38,7 @@
   "dependencies": {
     "bluebird": "^2.9.34",
     "heroku-client": "^1.11.0",
-    "lodash": "^3.9.3",
+    "lodash": "^3.10.0",
     "type-of": "^2.0.1"
   },
   "devDependencies": {
