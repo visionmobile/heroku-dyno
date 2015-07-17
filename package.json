@@ -36,7 +36,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "bluebird": "^2.9.27",
+    "bluebird": "^2.9.34",
     "heroku-client": "^1.11.0",
     "lodash": "^3.9.3",
     "type-of": "^2.0.1"
