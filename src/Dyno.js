@@ -1,197 +1,191 @@
-var util = require('util');
-var EventEmitter = require('events').EventEmitter;
-var Heroku = require('heroku-client');
-var Promise = require('bluebird');
-var _ = require('lodash');
-var type = require('type-of');
+import {EventEmitter} from 'events';
+import Heroku from 'heroku-client';
+import Promise from 'bluebird';
+import _ from 'lodash';
+import type from 'type-of';
+
+class Dyno extends EventEmitter {
 
 /**
- * Creates a new Heroku dyno of the designated properties.
- * @param {Object} props
- * @param {String} props.token
- * @param {String} props.app
- * @param {String} props.command
- * @param {Number} [props.autoSync]
- * @param {String} [props.size=1x]
- */
-function Dyno(props) {
-  this.app = new Heroku({token: props.token}).apps(props.app);
-  this.command = props.command;
-  this.size = props.size || '1X';
-  this._processes = [];
-  this._timeout = null;
+   * Creates a new Heroku dyno of the designated properties.
+   * @param {Object} props
+   * @param {String} props.token
+   * @param {String} props.app
+   * @param {String} props.command
+   * @param {Number} [props.autoSync]
+   * @param {String} [props.size=1x]
+   */
+  constructor(props) {
+    super();
+    this.setMaxListeners(999);
 
-  if (props.autoSync) {
+    this.app = new Heroku({token: props.token}).apps(props.app);
+    this.command = props.command;
+    this.size = props.size || '1X';
+    this._processes = [];
+    this._syncTimeout = null;
+
     this.autoSync(props.autoSync);
   }
 
-  EventEmitter.call(this);
-  this.setMaxListeners(999);
-}
+  /**
+   * Returns an array of running processes.
+   * @return {Array.<Object>}
+   */
+  get runningProcesses() {
+    return this._processes;
+  }
 
-// @extends EventEmitter
-util.inherits(Dyno, EventEmitter);
+  /**
+   * Initiates a new running process on heroku.
+   * @param {Function} [callback] optional callback function with (err, dyno) arguments
+   * @return {Promise} resolving to the dyno object.
+   */
+  start(callback) {
+    return Promise.resolve(this.app.dynos().create({command: this.command, size: this.size}))
 
-/**
- * Starts a new process on heroku and stores its reference in the internal processes array.
- * @param {Function} [callback] optional callback function with (err, dyno) arguments
- * @return {Promise} resolving to the dyno object.
- */
-Dyno.prototype.start = function (callback) {
-  var _this = this;
+      .then((dyno) => {
+        this._processes.push(dyno);
+        this.emit('start', dyno);
+        return dyno;
+      })
 
-  return Promise.resolve(this.app.dynos().create({
-    command: this.command,
-    size: this.size
-  }))
+      .nodeify(callback);
+  }
 
-    .then(function (dyno) {
-      _this._processes.push(dyno);
-      _this.emit('start', dyno);
-      return dyno;
-    })
+  /**
+   * Terminates the designated running process on heroku.
+   * @param {Object} dyno
+   * @param {Function} [callback] optional callback function with (err) arguments
+   * @return {Promise}
+   */
+  stop(dyno, callback) {
+    return Promise.resolve(this.app.dynos(dyno.id).restart())
 
-    .nodeify(callback);
-};
+      .then(() => {
+        var i = _.findIndex(this._processes, {id: dyno.id});
 
-/**
- * Stops the designated process on heroku and removes its reference from the internal processes array.
- * @param {Object} dyno
- * @param {Function} [callback] optional callback function with (err) arguments
- * @return {Promise}
- */
-Dyno.prototype.stop = function (dyno, callback) {
-  var _this = this;
-
-  return Promise.resolve(this.app.dynos(dyno.id).restart())
-
-    .then(function () {
-      var i = _.findIndex(_this._processes, {id: dyno.id});
-
-      if (i !== -1) {
-        _this._processes.splice(i, 1);
-        _this.emit('stop', dyno);
-      }
-    })
-
-    .nodeify(callback);
-};
-
-/**
- * Syncs the internal processes array with heroku.
- * @param {Function} [callback] optional callback function with (err, dynos) arguments
- * @return {Promise} resolvind to the active dynos on heroku
- */
-Dyno.prototype.sync = function (callback) {
-  var _this = this;
-
-  return Promise.resolve(this.app.dynos().list())
-
-    // filter-out other dynos
-    .filter(function (dyno) {
-      return dyno.command === _this.command;
-    })
-
-    // register new processes
-    .each(function (e) {
-      if (_.findIndex(_this._processes, {id: e.id}) === -1) {
-        _this._processes.push(e);
-        _this.emit('start', e);
-      }
-    })
-
-    .then(function (dynos) {
-      // unregister stopped processes
-      return Promise.each(_this._processes, function (e, i) {
-        if (_.findIndex(dynos, {id: e.id}) === -1) {
-          _this._processes.splice(i, 1);
-          _this.emit('stop', e);
+        if (i !== -1) {
+          this._processes.splice(i, 1);
+          this.emit('stop', dyno);
         }
       })
 
-        .return(dynos);
-    })
-
-    .then(function (dynos) {
-      _this.emit('sync', _this._processes);
-      return dynos;
-    })
-
-    .nodeify(callback);
-};
-
-/**
- * Enables automatic syncing with heroku every designated milliseconds.
- * @param {Number} ms
- */
-Dyno.prototype.autoSync = function (ms) {
-  var _this = this;
-
-  if (!_.isNumber(ms)) {
-    throw new Error('Invalid ms argument; expected number, received ' + type(ms));
-  }
-
-  if (ms <= 0) {
-    clearTimeout(this._timeout);
-    this._timeout = null;
-    return;
-  }
-
-  if (ms < 5000) {
-    clearTimeout(this._timeout);
-    this._timeout = null;
-    throw new Error('Timeout period is too short; please specifiy a timeout of 5000 milliseconds and above');
-  }
-
-  this._timeout = setTimeout(function () {
-    return _this.sync()
-      // slight delay to avoid immediate repetition
-      .delay(10 * 1000)
-
-      .finally(function () {
-        return _this.autoSync(ms);
-      });
-  }, ms);
-};
-
-/**
- * Scales the dyno to the designated quantity.
- * @param {Number} quantity the quantity
- * @param {Function} [callback] optional callback function with (err) arguments
- * @return {Promise}
- */
-Dyno.prototype.scale = function (quantity, callback) {
-  var _this = this;
-
-  if (!_.isNumber(quantity)) {
-    return Promise.reject(new Error('Invalid quantity argument; expected number, received ' + type(quantity)))
       .nodeify(callback);
   }
 
-  if (quantity < 0) {
-    return Promise.reject(new Error('Invalid quantity argument; please provide a non-negative number'))
+  /**
+   * Syncs running processes with heroku.
+   * @param {Function} [callback] optional callback function with (err, dynos) arguments
+   * @return {Promise} resolvind to the active dynos on heroku
+   */
+  sync(callback) {
+    return Promise.resolve(this.app.dynos().list())
+
+      // filter-out other dynos
+      .filter(function (dyno) {
+        return dyno.command === this.command;
+      })
+
+      // register running processes
+      .each((e) => {
+        if (_.findIndex(this._processes, {id: e.id}) === -1) {
+          this._processes.push(e);
+          this.emit('start', e);
+        }
+      })
+
+      // unregister stopped processes
+      .then((dynos) => {
+        return Promise.each(this._processes, (e, i) => {
+          if (_.findIndex(dynos, {id: e.id}) === -1) {
+            this._processes.splice(i, 1);
+            this.emit('stop', e);
+          }
+        })
+
+          .return(dynos);
+      })
+
+      // emit sync and return dynos
+      .then((dynos) => {
+        this.emit('sync', this._processes);
+        return dynos;
+      })
+
       .nodeify(callback);
   }
 
-  return this.sync()
+  /**
+   * Scales running processes to the designated quantity.
+   * @param {Number} quantity the quantity
+   * @param {Function} [callback] optional callback function with (err) arguments
+   * @return {Promise}
+   */
+  scale(quantity, callback) {
+    if (!_.isNumber(quantity)) {
+      return Promise.reject(new Error('Invalid quantity argument; expected number, received ' + type(quantity)))
+        .nodeify(callback);
+    }
 
-    .then(function (dynos) {
-      // less dynos are needed
-      if (dynos.length > quantity) {
-        return Promise.each(_.take(dynos, dynos.length - quantity), function (dyno) {
-          return _this.stop(dyno);
-        });
-      }
+    if (quantity < 0) {
+      return Promise.reject(new Error('Invalid quantity argument; please provide a non-negative number'))
+        .nodeify(callback);
+    }
 
-      // more dynos are needed
-      if (dynos.length < quantity) {
-        return Promise.each(new Array(quantity - dynos.length), function () {
-          return _this.start();
-        });
-      }
-    })
+    return this.sync()
 
-    .nodeify(callback);
-};
+      .then((dynos) => {
+        // less dynos are needed
+        if (dynos.length > quantity) {
+          return Promise.each(_.take(dynos, dynos.length - quantity), (dyno) => {
+            return this.stop(dyno);
+          });
+        }
+
+        // more dynos are needed
+        if (dynos.length < quantity) {
+          return Promise.each(new Array(quantity - dynos.length), () => {
+            return this.start();
+          });
+        }
+      })
+
+      .nodeify(callback);
+  }
+
+  /**
+   * Enables automatic syncing with heroku every designated milliseconds.
+   * @param {Number} ms
+   */
+  autoSync(ms) {
+    if (!_.isNumber(ms)) {
+      throw new Error('Invalid ms argument; expected number, received ' + type(ms));
+    }
+
+    if (ms <= 0) {
+      clearTimeout(this._syncTimeout);
+      this._syncTimeout = null;
+      return;
+    }
+
+    if (ms < 5000) {
+      clearTimeout(this._syncTimeout);
+      this._syncTimeout = null;
+      throw new Error('Timeout period is too short; please specifiy a timeout of 5000 milliseconds and above');
+    }
+
+    this._syncTimeout = setTimeout(() => {
+      return this.sync()
+
+        // slight delay to avoid immediate repetition
+        .delay(10 * 1000)
+
+        // recurse
+        .finally(() => this.autoSync(ms));
+    }, ms);
+  }
+
+}
 
 module.exports = Dyno;
