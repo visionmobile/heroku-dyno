@@ -6,7 +6,7 @@
     "type": "git",
     "url": "git://github.com/visionmobile/heroku-dyno.git"
   },
-  "main": "dist/iTunes.js",
+  "main": "dist/Dyno.js",
   "scripts": {
     "start": "./node_modules/babel/bin/babel-node ./src/iTunes.js",
     "build": "gulp build",
