@@ -25,7 +25,9 @@ class Dyno extends EventEmitter {
     this._processes = [];
     this._syncTimeout = null;
 
-    this.autoSync(props.autoSync);
+    if (props.autoSync) {
+      this.autoSync(props.autoSync);
+    }
   }
 
   /**
@@ -83,7 +85,7 @@ class Dyno extends EventEmitter {
     return Promise.resolve(this.app.dynos().list())
 
       // filter-out other dynos
-      .filter(function (dyno) {
+      .filter((dyno) => {
         return dyno.command === this.command;
       })
 
