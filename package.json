@@ -1,6 +1,6 @@
 {
   "name": "heroku-dyno",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Unbaffled heroku dyno management",
   "repository": {
     "type": "git",

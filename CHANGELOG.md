@@ -1,3 +1,7 @@
+## 0.3.2 - 2015-08-17
+
+* Bugfixes: autosync is optional + invalid this reference
+
 ## 0.3.1 - 2015-07-17
 
 * Fix invalid main script reference
